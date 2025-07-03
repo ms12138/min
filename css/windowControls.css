@@ -1,174 +1,118 @@
-body {
-  --control-space-top: 0px;
-  --control-space-left: 0.3em;
-  --control-space-right: 0.3em;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-size: 16px;
+  font-family: ".SFNSText-Regular", "BlinkMacSystemFont", "Helvetica Neue",
+    "Segoe UI", "Arial", sans-serif;
 }
-/* window drag regions */
-
-.window-drag-area {
-  display: none;
+/* TODO figure out why the default focus color in Electron is orange */
+*:focus {
+  outline-color: rgb(0, 117, 255);
 }
-
-body.windows:not(.maximized):not(.fullscreen):not(.separate-titlebar),
-body.linux:not(.maximized):not(.fullscreen):not(.separate-titlebar) {
-  --control-space-top: 12px;
+.dark-mode *:focus {
+  outline-color: transparent;
 }
-
-/* On Windows, draggable regions aren't clickable, so the drag region is a separate area above the tabstrip */
-body.windows:not(.maximized):not(.fullscreen):not(.separate-titlebar) .window-drag-area,
-body.linux:not(.maximized):not(.fullscreen):not(.separate-titlebar) .window-drag-area {
-  display: block;
-  position: fixed;
-  /* leave an empty space around the edges of the drag area so that the window can be resized */
-  top: 3px;
-  left: 3px;
-  width: calc(100% - 6px);
-  height: 12px;
-  -webkit-app-region: drag;
+body.mac * {
+  letter-spacing: 0.4px;
+}
+[hidden] {
+  display: none !important;
 }
 
-body.mac:not(.separate-titlebar):not(.fullscreen) .window-drag-area {
-  display: block;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 7px;
-  -webkit-app-region: drag;
+/* buttons are styled like normal text by default */
+button {
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  color: inherit;
+  outline: none;
 }
-
-body.mac:not(.is-edit-mode):not(.fullscreen):not(.separate-titlebar) #mac-window-drag-area {
-  margin-left: calc(var(--control-space-left) * -1);
-  width: calc(var(--control-space-left) + 1.25em);
+body,
+html {
+  background-color: #fff;
+  color: #000;
   height: 100%;
-  -webkit-app-region: drag;
+  overflow: hidden;
+  -webkit-user-select: none;
 }
 
-/* mac window buttons */
-
-body.mac:not(.fullscreen):not(.separate-titlebar) {
-  --control-space-left: 75px;
+body.dark-mode {
+  background-color: rgb(33, 37, 43);
+  color: lightgrey;
 }
 
-body.rtl.mac:not(.fullscreen):not(.separate-titlebar) {
-  --control-space-left: 0px;
-  --control-space-right: 75px;
-}
-
-/* Windows caption buttions */
-
-body.windows:not(.separate-titlebar) {
-  --control-space-right: 138px;
-}
-
-.windows-caption-buttons {
-  display: none;
-}
-
-body.windows:not(.separate-titlebar) .windows-caption-buttons {
-  display: flex;
-  position: absolute;
-  top: var(--control-space-top);
-  right: 0;
-  z-index: 10;
-}
-
-.windows-caption-buttons .element {
-  line-height: 36px;
-  width: 36px;
-  stroke: #000;
-  padding: 0 5px;
-  box-sizing: content-box;
-  fill: transparent;
+h1,
+h2,
+h3 {
+  font-size: 5em;
+  font-weight: 300;
+  opacity: 0.8;
+  margin: 0.5em 0;
+  color: inherit;
   text-align: center;
 }
-
-body:not(.task-overlay-is-shown).dark-theme .windows-caption-buttons .element {
-  stroke: #fff;
+h2 {
+  text-align: left;
+  font-size: 2.75em;
 }
-
-.windows-caption-buttons .element > svg {
-  width: 12px;
-  height: 12px;
+h3 {
+  text-align: left;
+  font-size: 2em;
 }
-
-.windows-caption-buttons .element {
-  transition: background-color 0.1s linear, color 0.1s linear;
+h1 + h2 {
+  margin-top: -1em;
 }
-.windows-caption-buttons .element:hover {
-  background-color: rgba(196, 196, 196, 0.4);
-  transition: none;
-}
-.windows-caption-buttons .element:active {
-  background-color: rgba(168, 168, 168, 0.5);
-}
-.windows-caption-buttons .element.caption-close:hover {
-  background-color: #e81123;
-}
-.windows-caption-buttons .element.caption-close:hover > svg,
-.windows-caption-buttons .element.caption-close:active > svg {
-  stroke: #fff;
-  stroke-width: 1.1px;
-}
-.windows-caption-buttons .element.caption-close:active {
-  background-color: rgba(232, 17, 35, 0.6);
-}
-
-/* Linux buttons */
-
-#linux-control-buttons {
-  display: none;
-}
-
-body.linux:not(.separate-titlebar) {
-  --control-space-right: 96px;
-}
-
-body.linux:not(.separate-titlebar) #linux-control-buttons {
-  display: block;
+.centered {
   position: absolute;
-  top: calc(9px + var(--control-space-top));
-  right: 9px;
-  z-index: 9;
-  width: 76px;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-50%);
+}
+.spacer {
+  height: 1em;
 }
 
-body.task-overlay-is-shown #linux-control-buttons {
-  color: black !important;
+.light-fade {
+  opacity: 0.666;
 }
 
-body.dark-mode.task-overlay-is-shown #linux-control-buttons {
-  color: white !important;
+a {
+  color: royalblue;
+  text-decoration: none;
 }
 
-#linux-control-buttons .button-background {
-  fill: currentColor;
-  stroke: currentColor;
-  fill-opacity: 0;
-  stroke-opacity: 0;
+.dark-mode a {
+  color: dodgerblue;
 }
 
-#linux-control-buttons g:hover .button-background {
-  fill-opacity: 0.02;
-  stroke-opacity: 0.09;
+.dark-mode input,
+.dark-mode textarea {
+  background-color: rgb(52, 58, 68);
+  color: white;
+  border-color: transparent;
 }
 
-#linux-control-buttons g:active .button-background {
-  fill-opacity: 0.18;
-  stroke-opacity: 0.24;
+/* styled scrollbars */
+
+.has-thin-scrollbar::-webkit-scrollbar {
+  height: 0.25em;
+}
+.has-thin-scrollbar::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.has-thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.175);
+  border-radius: 0.25em;
+}
+.dark-theme .has-thin-scrollbar::-webkit-scrollbar-track {
+  background-color: rgba(255, 255, 255, 0.25);
+}
+.dark-theme .has-thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
-.dark-theme #linux-control-buttons g:hover .button-background {
-  fill-opacity: 0.2;
-  stroke-opacity: 0.35;
-}
-
-.dark-theme #linux-control-buttons g:active .button-background {
-  fill-opacity: 0.45;
-  stroke-opacity: 0.7;
-}
-
-/* 新增样式：沉浸式阅读模式下隐藏相关元素 */
+/* 新增沉浸式阅读模式样式 */
 body.immersive-reading .windows-caption-buttons,
 body.immersive-reading #linux-control-buttons,
 body.immersive-reading .window-drag-area {
@@ -177,8 +121,13 @@ body.immersive-reading .window-drag-area {
 
 body.immersive-reading #navbar {
   display: none;
+  height: 0;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 body.immersive-reading #webviews {
   height: 100vh;
+  top: 0;
 }
