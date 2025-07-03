@@ -285,6 +285,11 @@ const defaultKeybindings = {
         })
       }
     })
+
+    // 添加新的快捷键定义
+    keybindings.defineShortcut({ keys: 'ctrl+alt+i' }, function (e) {
+      document.body.classList.toggle('immersive-reading');
+    })
   }
 }
 
