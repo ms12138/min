@@ -7,6 +7,7 @@ var tabEditor = require('navbar/tabEditor.js')
 var urlParser = require('util/urlParser.js')
 var keyMapModule = require('util/keyMap.js')
 var settings = require('util/settings/settings.js')
+const ipc = require('electron').ipcRenderer; // 引入 ipcRenderer
 
 var keyMap = keyMapModule.userKeyMap(settings.get('keyMap'))
 
@@ -286,9 +287,19 @@ const defaultKeybindings = {
       }
     })
 
-    // 添加新的快捷键定义
-    keybindings.defineShortcut({ keys: 'ctrl+alt+i' }, function (e) {
+    // 新增快捷键来切换沉浸式阅读模式
+    keybindings.defineShortcut('toggleImmersiveReading', function () {
       document.body.classList.toggle('immersive-reading');
+      
+      // 处理窗口的 “标题栏区域” 系统配置
+      if (document.body.classList.contains('immersive-reading')) {
+        // 禁用标题栏区域
+        ipc.invoke('setTitleBarStyle', 'hidden');
+      } else {
+        // 恢复标题栏区域
+        const useSeparateTitlebar = settings.get('useSeparateTitlebar');
+        ipc.invoke('setTitleBarStyle', useSeparateTitlebar ? 'default' : 'hidden');
+      }
     })
   }
 }
