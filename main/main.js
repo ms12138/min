@@ -316,221 +316,27 @@ function createWindowWithBounds (bounds, customArgs) {
     newWin.setMenuBarVisibility(false)
   })
 
-  /*
-  Handles events from mouse buttons
-  Unsupported on macOS, and on Linux, there is a default handler already,
-  so registering a handler causes events to happen twice.
-  See: https://github.com/electron/electron/issues/18322
-  */
-  if (process.platform === 'win32') {
-    newWin.on('app-command', function (e, command) {
-      if (command === 'browser-backward') {
-        sendIPCToWindow(newWin, 'goBack')
-      } else if (command === 'browser-forward') {
-        sendIPCToWindow(newWin, 'goForward')
-      }
-    })
-  }
+  // 新增处理设置标题栏样式的逻辑
+  ipc.handle('setTitleBarStyle', (event, style) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win.setTitleBarStyle(style);
+  });
 
-  // prevent remote pages from being loaded using drag-and-drop, since they would have node access
-  mainView.webContents.on('will-navigate', function (e, url) {
-    if (url !== browserPage) {
-      e.preventDefault()
-    }
-  })
-
-  mainView.webContents.on('before-input-event', function(e, input) {
-    sendIPCToWindow(newWin, 'before-input-event', input)
-  })
-
-  newWin.setTouchBar(buildTouchBar())
-
-  windows.addWindow(newWin)
-
-  return newWin
+  return newWin;
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-app.on('ready', function () {
-  settings.set('restartNow', false)
-  appIsReady = true
+app.whenReady().then(() => {
+  createWindow();
+});
 
-  /* the installer launches the app to install registry items and shortcuts,
-  but if that's happening, we shouldn't display anything */
-  if (isInstallerRunning) {
-    return
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
   }
+});
 
-  registerBundleProtocol(session.defaultSession)
-
-  const newWin = createWindow()
-
-  getWindowWebContents(newWin).on('did-finish-load', function () {
-    // if a URL was passed as a command line argument (probably because Min is set as the default browser on Linux), open it.
-    handleCommandLineArguments(process.argv)
-
-    // there is a URL from an "open-url" event (on Mac)
-    if (global.URLToOpen) {
-      // if there is a previously set URL to open (probably from opening a link on macOS), open it
-      sendIPCToWindow(newWin, 'addTab', {
-        url: global.URLToOpen
-      })
-      global.URLToOpen = null
-    }
-  })
-
-  mainMenu = buildAppMenu()
-  Menu.setApplicationMenu(mainMenu)
-  createDockMenu()
-})
-
-app.on('open-url', function (e, url) {
-  if (appIsReady) {
-    sendIPCToWindow(windows.getCurrent(), 'addTab', {
-      url: url
-    })
-  } else {
-    global.URLToOpen = url // this will be handled later in the createWindow callback
+app.on('activate', () => {
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
   }
-})
-
-// handoff support for macOS
-app.on('continue-activity', function(e, type, userInfo, details) {
-  if (type === 'NSUserActivityTypeBrowsingWeb' && details.webpageURL) {
-    e.preventDefault()
-    sendIPCToWindow(windows.getCurrent(), 'addTab', {
-      url: details.webpageURL
-    })
-  }
-})
-
-app.on('second-instance', function (e, argv, workingDir) {
-  if (windows.getCurrent()) {
-    if (windows.getCurrent().isMinimized()) {
-      windows.getCurrent().restore()
-    }
-    windows.getCurrent().focus()
-    // add a tab with the new URL
-    handleCommandLineArguments(argv)
-  }
-})
-
-/**
- * Emitted when the application is activated, which usually happens when clicks on the applications's dock icon
- * https://github.com/electron/electron/blob/master/docs/api/app.md#event-activate-os-x
- *
- * Opens a new tab when all tabs are closed, and min is still open by clicking on the application dock icon
- */
-app.on('activate', function (/* e, hasVisibleWindows */) {
-  if (!windows.getCurrent() && appIsReady) { // sometimes, the event will be triggered before the app is ready, and creating new windows will fail
-    createWindow()
-  }
-})
-
-ipc.on('focusMainWebContents', function () {
-  getWindowWebContents(windows.getCurrent()).focus()
-})
-
-ipc.on('showSecondaryMenu', function (event, data) {
-  if (!secondaryMenu) {
-    secondaryMenu = buildAppMenu({ secondary: true })
-  }
-  secondaryMenu.popup({
-    x: data.x,
-    y: data.y
-  })
-})
-
-ipc.on('handoffUpdate', function(e, data) {
-  if (app.setUserActivity && data.url && data.url.startsWith('http')) {
-    app.setUserActivity('NSUserActivityTypeBrowsingWeb', {}, data.url)
-  } else if (app.invalidateCurrentActivity) {
-    app.invalidateCurrentActivity()
-  }
-})
-
-ipc.on('quit', function () {
-  app.quit()
-})
-
-ipc.on('tab-state-change', function(e, events) {
-  const sourceWindowId = windows.windowFromContents(e.sender)?.id
-  if (!sourceWindowId) {
-    console.warn('warning: received tab state update from window after destruction, ignoring')
-    return
-  }
-  windows.getAll().forEach(function(window) {
-    if (getWindowWebContents(window).id !== e.sender.id) {
-      getWindowWebContents(window).send('tab-state-change-receive', {
-        sourceWindowId,
-        events
-      })
-    }
-  })
-})
-
-ipc.on('request-tab-state', function(e) {
-  const otherWindow = windows.getAll().find(w => getWindowWebContents(w).id !== e.sender.id)
-  if (!otherWindow) {
-    throw new Error('secondary window doesn\'t exist as source for tab state')
-  }
-  ipc.once('return-tab-state', function(e2, data) {
-    e.returnValue = data
-  })
-  getWindowWebContents(otherWindow).send('read-tab-state')
-})
-
-/* places service */
-
-const placesPage = 'file://' + __dirname + '/js/places/placesService.html'
-
-let placesWindow = null
-app.once('ready', function() {
-  placesWindow = new BrowserWindow({
-    width: 300,
-    height: 300,
-    show: false,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
-  })
-
-  placesWindow.loadURL(placesPage)
-})
-
-ipc.on('places-connect', function (e) {
-  placesWindow.webContents.postMessage('places-connect', null, e.ports)
-})
-
-function getWindowWebContents (win) {
-  return win.getContentView().children[0].webContents
-}
-
-/* translate service */
-
-const translatePage = 'min://app/pages/translateService/index.html'
-const translatePreload = __dirname + '/pages/translateService/translateServicePreload.js'
-
-app.on('ready', function() {
-  ipc.on('page-translation-session-create', function(e) {
-    let translateWindow = new BrowserWindow({
-      width: 300,
-      height: 300,
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true,
-        preload: translatePreload
-      }
-    })
-  
-    translateWindow.loadURL(translatePage)
-    // translateWindow.webContents.openDevTools({mode: 'detach'})
-
-    translateWindow.webContents.once('did-finish-load', function() {
-      translateWindow.webContents.postMessage('page-translation-session-create', null, e.ports)
-    })
-  })
-})
+});
