@@ -111,3 +111,23 @@ a {
 .dark-theme .has-thin-scrollbar::-webkit-scrollbar-thumb {
   background-color: rgba(255, 255, 255, 0.6);
 }
+
+/* 新增沉浸式阅读模式样式 */
+body.immersive-reading .windows-caption-buttons,
+body.immersive-reading #linux-control-buttons,
+body.immersive-reading .window-drag-area {
+  display: none;
+}
+
+body.immersive-reading #navbar {
+  display: none;
+  height: 0;
+  padding-top: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+body.immersive-reading #webviews {
+  height: 100vh;
+  top: 0;
+}
